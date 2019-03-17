@@ -1,0 +1,19 @@
+************
+* 27/03/19 *
+************
+
+HECHO:
+	- Escaneo de red
+	- Se muestra página para seleccionar red
+	- Se redirecciona a página para poner clave
+	- Se envía Form de conexión
+
+FALTA:
+	- Ver si se puede leer un POST
+	- Guardar selección en EEPROM
+	- Desactivar AP y conectarse a la red
+	- Ver si se puede pedir inicio de sesión al conectarse al AP
+	- Escaneo de puertos
+
+LINKS:
+	- Sobre manejo de server en ESP: https://techtutorialsx.com/2016/10/22/esp8266-webserver-getting-query-parameters/
