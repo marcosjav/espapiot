@@ -7,8 +7,11 @@
 /* Create a WiFi access point and provide a web server on it. */
 
 #include <ESP8266WiFi.h>
-#include <WiFiClient.h>
+//#include <WiFiClient.h>
+#include <WiFiClientSecure.h>
 #include <ESP8266WebServer.h>
+#include <DNSServer.h>
+#include <ESP8266mDNS.h>
 
 #ifndef APSSID
 #define APSSID "ESPap"
@@ -18,17 +21,32 @@
 /* Set these to your desired credentials. */
 const char *ssid = APSSID;
 const char *password = APPSK;
+
+/* Don't set this wifi credentials. They are configurated at runtime and stored on EEPROM */
+char ssid[32] = "";
+char password[32] = "";
+
+/* webpage constants*/
 const char *_htmlhead = "<!DOCTYPE html><html><head><meta charset='utf-8'></head><body>";
 const char *_htmlfoot = "</body></html>";
 
+/* hostname for mDNS. Should work at least on windows. Try http://esp8266.local */
+const char *myHostname = "esp8266";
+
+// DNS server
+const byte DNS_PORT = 53;
+DNSServer dnsServer;
+
+// Web Server
 ESP8266WebServer server(80);
 
-/* Just a little test message.  Go to http://192.168.4.1 in a web browser
-   connected to this access point to see it.
+/* 
+ *  Request mannagement
 */
 void handleRoot() {
   server.send(200, "text/html", _htmlhead + showHTTP() + _htmlfoot);
 }
+
 void askPass() {
   String message = "<h1>Seleccionó la red <b>";
   int i = server.arg(0).toInt();
@@ -47,12 +65,17 @@ void connectNet(){
   server.send(200, "text/html", _htmlhead + message + _htmlfoot);
 }
 
+void handleNotFound(){
+  String message = "<h1>No e encuentra la página</h1>";
+  server.send(200, "text/html", _htmlhead + message + _htmlfoot);
+}
+
 void setup() {
   delay(1000);
   Serial.begin(115200);
   Serial.println();
   Serial.print("Configuring access point...");
-  /* You can remove the password parameter if you want the AP to be open. */
+  
   WiFi.softAP(ssid, password);
 
   //IPAddress myIP = WiFi.softAPIP();
@@ -63,6 +86,10 @@ void setup() {
     Serial.println("Ready");
   else
     Serial.println("Problem");
+
+  /* Setup the DNS server redirecting all the domains to the apIP */
+  dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+  dnsServer.start(DNS_PORT, "*", ip);
 
   handlingPath();
 
@@ -75,9 +102,13 @@ void handlingPath(){
   server.on("/", handleRoot);
   server.on("/select", askPass);
   server.on("/connect", connectNet);
+  server.onNotFound(handleNotFound);
 }
 
 void loop() {
+  //DNS
+  dnsServer.processNextRequest();
+  //HTTP
   server.handleClient();
 }
 
